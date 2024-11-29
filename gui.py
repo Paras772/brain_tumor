@@ -1,112 +1,61 @@
-import tkinter
+import streamlit as st
 from PIL import Image
-from tkinter import filedialog
 import cv2 as cv
-from frames import *
-from displayTumor import *
-from predictTumor import *
+from displayTumor import DisplayTumor
+from predictTumor import predictTumor
 
+# Initialize DisplayTumor class
+DT = DisplayTumor()
 
-class Gui:
-    MainWindow = 0
-    listOfWinFrame = list()
-    FirstFrame = object()
-    val = 0
-    fileName = 0
-    DT = object()
+# Set page configuration
+st.set_page_config(page_title="Brain Tumor Detection", layout="centered")
 
-    wHeight = 700
-    wWidth = 1180
+# Title and description
+st.title("Brain Tumor Detection System")
+st.write("Upload an MRI image to detect or view tumor regions.")
 
-    def __init__(self):
-        global MainWindow
-        MainWindow = tkinter.Tk()
-        MainWindow.geometry('1200x720')
-        MainWindow.resizable(width=False, height=False)
+# Sidebar for user options
+action = st.sidebar.radio(
+    "Select an Action:",
+    ["Detect Tumor", "View Tumor Region"],
+    help="Choose what you want to do with the uploaded MRI image."
+)
 
-        self.DT = DisplayTumor()
+# File uploader for image input
+uploaded_file = st.file_uploader("Upload MRI Image (jpg, jpeg, png):", type=["jpg", "jpeg", "png"])
 
-        self.fileName = tkinter.StringVar()
+# Process the uploaded file
+if uploaded_file:
+    # Read the image using PIL
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded MRI Image", use_column_width=True)
 
-        self.FirstFrame = Frames(self, MainWindow, self.wWidth, self.wHeight, 0, 0)
-        self.FirstFrame.btnView['state'] = 'disable'
+    # Convert the image to OpenCV format
+    mri_image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
 
-        self.listOfWinFrame.append(self.FirstFrame)
+    # Check user action
+    if st.button("Process"):
+        if action == "Detect Tumor":
+            # Call tumor detection function
+            result = predictTumor(mri_image)
 
-        WindowLabel = tkinter.Label(self.FirstFrame.getFrames(), text="Brain Tumor Detection", height=1, width=40)
-        WindowLabel.place(x=320, y=30)
-        WindowLabel.configure(background="White", font=("Comic Sans MS", 16, "bold"))
-
-        self.val = tkinter.IntVar()
-        RB1 = tkinter.Radiobutton(self.FirstFrame.getFrames(), text="Detect Tumor", variable=self.val,
-                                  value=1, command=self.check)
-        RB1.place(x=250, y=200)
-        RB2 = tkinter.Radiobutton(self.FirstFrame.getFrames(), text="View Tumor Region",
-                                  variable=self.val, value=2, command=self.check)
-        RB2.place(x=250, y=250)
-
-        browseBtn = tkinter.Button(self.FirstFrame.getFrames(), text="Browse", width=8, command=self.browseWindow)
-        browseBtn.place(x=800, y=550)
-
-        MainWindow.mainloop()
-
-    def getListOfWinFrame(self):
-        return self.listOfWinFrame
-
-    def browseWindow(self):
-        global mriImage
-        FILEOPENOPTIONS = dict(defaultextension='*.*',
-                               filetypes=[('jpg', '*.jpg'), ('png', '*.png'), ('jpeg', '*.jpeg'), ('All Files', '*.*')])
-        self.fileName = filedialog.askopenfilename(**FILEOPENOPTIONS)
-        image = Image.open(self.fileName)
-        imageName = str(self.fileName)
-        mriImage = cv.imread(imageName, 1)
-        self.listOfWinFrame[0].readImage(image)
-        self.listOfWinFrame[0].displayImage()
-        self.DT.readImage(image)
-
-    def check(self):
-        global mriImage
-        #print(mriImage)
-        if (self.val.get() == 1):
-            self.listOfWinFrame = 0
-            self.listOfWinFrame = list()
-            self.listOfWinFrame.append(self.FirstFrame)
-
-            self.listOfWinFrame[0].setCallObject(self.DT)
-
-            res = predictTumor(mriImage)
-            
-            if res > 0.5:
-                resLabel = tkinter.Label(self.FirstFrame.getFrames(), text="Tumor Detected", height=1, width=20)
-                resLabel.configure(background="White", font=("Comic Sans MS", 16, "bold"), fg="red")
+            # Display result
+            if result > 0.5:
+                st.error("**Tumor Detected** in the MRI Image.", icon="🚨")
             else:
-                resLabel = tkinter.Label(self.FirstFrame.getFrames(), text="No Tumor", height=1, width=20)
-                resLabel.configure(background="White", font=("Comic Sans MS", 16, "bold"), fg="green")
+                st.success("**No Tumor Detected** in the MRI Image.", icon="✅")
 
-            resLabel.place(x=700, y=450)
+        elif action == "View Tumor Region":
+            # Call DisplayTumor function to process and display tumor region
+            DT.readImage(image)
+            tumor_image = DT.displayTumor()  # Assuming this returns a processed image
 
-        elif (self.val.get() == 2):
-            self.listOfWinFrame = 0
-            self.listOfWinFrame = list()
-            self.listOfWinFrame.append(self.FirstFrame)
+            if tumor_image is not None:
+                # Convert OpenCV image to PIL format for display
+                tumor_image = Image.fromarray(cv.cvtColor(tumor_image, cv.COLOR_BGR2RGB))
+                st.image(tumor_image, caption="Tumor Region Highlighted", use_column_width=True)
+            else:
+                st.warning("Unable to highlight tumor region. Please ensure a valid MRI image is uploaded.")
 
-            self.listOfWinFrame[0].setCallObject(self.DT)
-            self.listOfWinFrame[0].setMethod(self.DT.removeNoise)
-            secFrame = Frames(self, MainWindow, self.wWidth, self.wHeight, self.DT.displayTumor, self.DT)
-
-            self.listOfWinFrame.append(secFrame)
-
-
-            for i in range(len(self.listOfWinFrame)):
-                if (i != 0):
-                    self.listOfWinFrame[i].hide()
-            self.listOfWinFrame[0].unhide()
-
-            if (len(self.listOfWinFrame) > 1):
-                self.listOfWinFrame[0].btnView['state'] = 'active'
-
-        else:
-            print("Not Working")
-
-mainObj = Gui()
+else:
+    st.info("Please upload an MRI image to proceed.")
