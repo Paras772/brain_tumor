@@ -24,11 +24,14 @@ class DisplayTumor:
 
     # Display tumor region by marking the tumor area
     def displayTumor(self):
+        # Ensure the image is binary (single channel) for the distance transform
+        binary_image = cv.threshold(self.thresh, 0, 255, cv.THRESH_BINARY)[1]  # Binary thresholding
+
         # Sure background area
-        sure_bg = cv.dilate(self.curImg, self.kernel, iterations=3)
+        sure_bg = cv.dilate(binary_image, self.kernel, iterations=3)
 
         # Finding sure foreground area
-        dist_transform = cv.distanceTransform(self.curImg, cv.DIST_L2, 5)
+        dist_transform = cv.distanceTransform(binary_image, cv.DIST_L2, 5)
         ret, sure_fg = cv.threshold(dist_transform, 0.7 * dist_transform.max(), 255, 0)
 
         # Find unknown region (subtract background from foreground)
