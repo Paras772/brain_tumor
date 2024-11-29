@@ -4,3 +4,4 @@ opencv-python
 numpy
 opencv-python-headless
 tensorflow
+imutils
