@@ -22,10 +22,10 @@ action = st.sidebar.radio(
     help="Choose what you want to do with the uploaded MRI image."
 )
 
-# File uploader
+# File uploader for MRI image
 uploaded_file = st.file_uploader("Upload MRI Image (jpg, jpeg, png):", type=["jpg", "jpeg", "png"])
 
-# Main functionality
+# Main functionality to process the uploaded file
 if uploaded_file:
     # Load the uploaded image
     image = Image.open(uploaded_file)
@@ -34,7 +34,7 @@ if uploaded_file:
     # Convert the image to OpenCV format
     mri_image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
 
-    # Check user action and process the image accordingly
+    # Process based on the user action
     if st.button("Process"):
         if action == "Detect Tumor":
             try:
