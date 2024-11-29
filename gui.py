@@ -2,11 +2,11 @@ import streamlit as st
 from PIL import Image
 import numpy as np
 import cv2 as cv
-from displayTumor import displayTumor
+from displayTumor import DisplayTumor
 from predictTumor import predictTumor
 
 # Initialize the DisplayTumor class
-DT = displayTumor()
+DT = DisplayTumor()
 
 # Set Streamlit page configuration
 st.set_page_config(
